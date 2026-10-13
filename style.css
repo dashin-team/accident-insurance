@@ -1787,3 +1787,19 @@ select:focus {
   border-left: 1px dashed #9db7c4;
   pointer-events: none;
 }
+
+/* ---- 脫臼部位（選填）：報價卡第 7 列與情境試算格 ---- */
+.scenario-box .joint-field { grid-column: 1/-1; display: grid; grid-template-columns: 1.35fr 1.6fr; gap: 0 8px; align-items: end; }
+.scenario-box .joint-note { margin: 0 0 4px; color: #b9cfcd; font-size: 12px; line-height: 1.35; }
+.calculation-grid.has-joint { grid-template-columns: repeat(3, 1fr); }
+.calculation-grid.has-joint > div { border-top: 1px solid #d3c4aa; }
+.calculation-grid.has-joint > div:nth-child(-n + 3) { border-top: 0; }
+.calculation-grid.has-joint > div:nth-child(4) { border-left: 0; }
+.calculation-grid.has-joint .calculation-total { grid-column: span 2; }
+.calculation-grid .calc-joint em { grid-column: 1/-1; font-style: normal; font-size: 12px; color: #8a5a2b; }
+@media (width<=720px) {
+  .calculation-grid.has-joint { grid-template-columns: 1fr 1fr; }
+  .calculation-grid.has-joint > div:nth-child(n) { border-top: 1px solid #d3c4aa; border-left: 1px solid #d3c4aa; }
+  .calculation-grid.has-joint > div:nth-child(-n + 2) { border-top: 0; }
+  .calculation-grid.has-joint > div:nth-child(odd) { border-left: 0; }
+}

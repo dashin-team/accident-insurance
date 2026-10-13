@@ -221,6 +221,7 @@ window.QUOTE_RATES = {
     hasExistingMain: false, existingMainChecked: false,
     olaTerm: "20", olaAmount: 10, adgAmount: 200, tmrAmount: 5, admDaily: 2000, adhAmount: 50,
     boneId: "radius", fractureType: "complete", hospitalDaysInput: "5",
+    jointId: "", // 脫臼部位（"" = 不選）
   },
 
   /* ---------- OLA6 金來寶小額終身壽險 ----------
