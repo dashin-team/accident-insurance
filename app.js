@@ -638,8 +638,8 @@
       " → 骨折理賠 " + money.format(got) + " 元";
     var out = $("caseApplied");
     if (out) { out.textContent = msg + (notes.length ? "；" + notes.join("；") : "") + "。"; out.hidden = false; }
-    var card = $("quoteCard");
-    if (card && card.scrollIntoView) { // 報價卡不在畫面內（例如手機版在下方）→ 捲過去看結果
+    var card = $("chartThumb") || $("quoteCard"); // 骨頭人圖在報價卡上方，且氣泡直接顯示理賠金額 → 捲到圖
+    if (card && card.scrollIntoView) { // 圖不在畫面內（例如手機版在下方）→ 捲過去看結果
       var r = card.getBoundingClientRect();
       if (r.top < 0 || r.top > window.innerHeight - 120) card.scrollIntoView({ behavior: "smooth", block: "start" });
     }

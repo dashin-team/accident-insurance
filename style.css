@@ -1803,3 +1803,6 @@ select:focus {
   .calculation-grid.has-joint > div:nth-child(-n + 2) { border-top: 0; }
   .calculation-grid.has-joint > div:nth-child(odd) { border-left: 0; }
 }
+
+/* 排序：骨頭人互動圖在報價卡上方 */
+.summary-panel > .chart-card { margin: 0 0 7px; }
