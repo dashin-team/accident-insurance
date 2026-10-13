@@ -1806,3 +1806,16 @@ select:focus {
 
 /* 排序：骨頭人互動圖在報價卡上方 */
 .summary-panel > .chart-card { margin: 0 0 7px; }
+
+/* 骨折「不選」：只剩 ADM 住院（＋脫臼）與合計 */
+.calculation-grid.no-bone { grid-template-columns: 1fr 1fr; }
+.calculation-grid.no-bone.has-joint { grid-template-columns: repeat(3, 1fr); }
+.calculation-grid.no-bone > div:nth-child(n) { border-top: 0; border-left: 1px solid #d3c4aa; }
+.calculation-grid.no-bone > div:first-child { border-left: 0; }
+.calculation-grid.no-bone .calculation-total { grid-column: auto; }
+@media (width<=720px) {
+  .calculation-grid.no-bone.has-joint { grid-template-columns: 1fr 1fr; }
+  .calculation-grid.no-bone.has-joint .calculation-total { grid-column: 1/-1; border-left: 0; border-top: 1px solid #d3c4aa; }
+}
+.scenario-box select:disabled { opacity: .45; cursor: not-allowed; }
+.callout-main.callout-empty strong { font-size: 20px; }

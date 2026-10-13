@@ -84,7 +84,7 @@
     var tmrMax = Math.min(RULES.tmr.max, Math.floor(s.adgAmount * RULES.tmr.adgRatio));
     var effectiveTmr = Math.max(0, Math.min(s.tmrAmount, RULES.tmr.max, Math.floor(s.adgAmount * RULES.tmr.adgRatio)));
 
-    var bone = findBone(s.boneId);
+    var bone = s.boneId ? findBone(s.boneId) : null; // "" = 骨折部位「不選」
     var fracture = R.FRACTURE_TYPES[s.fractureType];
     var fractureFactor = fracture.factor;
     var hospitalDays = Math.min(RULES.maxHospitalDays, Math.max(0, Number(s.hospitalDaysInput) || 0));
@@ -125,10 +125,11 @@
     }
 
     // ---- 骨折情境給付 ----
-    var adhFracture = Math.round(effectiveAdh * 1e4 * (bone.adh / 100) * fractureFactor); // ADH 骨折保險金
+    // 骨折「不選」：無 ADH 骨折金／關懷金、無 ADM 未住院骨折給付；ADM 住院日額仍依實際住院日數（上限 maxHospitalDays）計入
+    var adhFracture = bone ? Math.round(effectiveAdh * 1e4 * (bone.adh / 100) * fractureFactor) : 0; // ADH 骨折保險金
     var adhCare = Math.round(adhFracture * RULES.adhCareRatio);                            // ADH 2% 關懷金
-    var boneDays = Math.round(bone.days * fractureFactor);
-    var allowedHospitalDays = Math.min(Math.max(0, hospitalDays), boneDays);
+    var boneDays = bone ? Math.round(bone.days * fractureFactor) : 0;
+    var allowedHospitalDays = bone ? Math.min(Math.max(0, hospitalDays), boneDays) : hospitalDays;
     var remainingBoneDays = Math.max(0, boneDays - allowedHospitalDays);
     var admHospital = allowedHospitalDays * s.admDaily;                                     // ADM 住院日額
     var admBoneSupport = Math.round(remainingBoneDays * s.admDaily * RULES.admBoneSupportRatio); // ADM 未住院骨折
@@ -222,8 +223,9 @@
     syncNumber($("admDaily"), s.admDaily);
     $("adhAmount").max = String(c.maxAdh);
     syncNumber($("adhAmount"), s.adhAmount);
-    $("boneId").value = s.boneId;
+    $("boneId").value = s.boneId || "";
     $("fractureType").value = s.fractureType;
+    $("fractureType").disabled = !s.boneId; // 骨折「不選」時骨折程度停用
     $("jointId").value = s.jointId || "";
     syncText($("hospitalDays"), s.hospitalDaysInput);
 
@@ -283,26 +285,28 @@
     html += benefitRow("5", "意外住院／門診手術",
       adm === 0 ? "不投保" : "住院 " + money.format(adm) + "元／日｜門診手術 " + money.format(adm) + "元／次",
       adm === 0 ? "此方案未納入 ADM" : "ADM 門診手術每次意外傷害以一次為限");
-    html += benefitRow("6", c.bone.label + "｜" + c.fracture.label,
+    if (c.bone) html += benefitRow("6", c.bone.label + "｜" + c.fracture.label,
       adhE === 0 ? "不投保" : money.format(c.adhFracture + c.adhCare) + " 元",
       adhE === 0 ? "此方案未納入 ADH" : "ADH 骨折金 " + money.format(c.adhFracture) + "＋2%關懷金 " + money.format(c.adhCare),
       adhE > 0);
     if (c.joint) {
       html += '<div class="benefit-row benefit-row--joint' + (adhE > 0 ? " benefit-row--accent" : "") + '">' +
-        '<span class="benefit-number">7</span>' +
+        '<span class="benefit-number">' + (c.bone ? 7 : 6) + "</span>" +
         '<div class="benefit-copy"><strong>' + esc("脫臼開放性復位術｜" + c.joint.label) + "</strong><small>" +
         esc(adhE === 0 ? "此方案未納入 ADH" : "ADH " + money.format(adhE) + " 萬 × " + c.joint.pct + "%｜需實際施行開放性復位術") + "</small></div>" +
         "<b>" + esc(adhE === 0 ? "未投保 ADH" : money.format(c.dislocation) + " 元") + "</b></div>";
     }
     html += "</div>";
 
-    html += '<div class="fracture-calculation"><div class="fracture-title"><span>骨折可領多少？</span><h3>符合條款定義的 情境試算</h3></div>' +
-      '<div class="calculation-grid' + (c.joint ? " has-joint" : "") + '">' +
-      "<div><small>ADH 骨折＋關懷金</small><b>" + money.format(c.adhFracture + c.adhCare) + "</b><span>元</span></div>" +
+    var calcTitle = c.bone ? "骨折可領多少？" : c.joint ? "脫臼可領多少？" : "意外住院可領多少？";
+    var totalLabel = c.bone && c.joint ? "定額給付合計試算（骨折＋脫臼）" : c.joint ? "定額給付合計試算（脫臼）" : "定額給付合計試算";
+    html += '<div class="fracture-calculation"><div class="fracture-title"><span>' + calcTitle + '</span><h3>符合條款定義的 情境試算</h3></div>' +
+      '<div class="calculation-grid' + (c.joint ? " has-joint" : "") + (c.bone ? "" : " no-bone") + '">' +
+      (c.bone ? "<div><small>ADH 骨折＋關懷金</small><b>" + money.format(c.adhFracture + c.adhCare) + "</b><span>元</span></div>" : "") +
       "<div><small>ADM 住院 " + c.allowedHospitalDays + " 日</small><b>" + (adm === 0 ? "未投保" : money.format(c.admHospital)) + "</b>" + (adm !== 0 ? "<span>元</span>" : "") + "</div>" +
-      "<div><small>ADM 未住院骨折給付</small><b>" + (adm === 0 ? "未投保" : money.format(c.admBoneSupport)) + "</b>" + (adm !== 0 ? "<span>元</span>" : "") + "</div>" +
+      (c.bone ? "<div><small>ADM 未住院骨折給付</small><b>" + (adm === 0 ? "未投保" : money.format(c.admBoneSupport)) + "</b>" + (adm !== 0 ? "<span>元</span>" : "") + "</div>" : "") +
       (c.joint ? '<div class="calc-joint"><small>脫臼開放性復位術｜' + esc(c.joint.label) + "</small><b>" + (adhE === 0 ? "未投保 ADH" : money.format(c.dislocation)) + "</b>" + (adhE !== 0 ? "<span>元</span>" : "") + "<em>需實際施行開放性復位術</em></div>" : "") +
-      '<div class="calculation-total"><small>' + (c.joint ? "定額給付合計試算（骨折＋脫臼）" : "定額給付合計試算") + "</small><b>" + money.format(c.joint ? c.fixedTotalWithJoint : c.fixedFractureTotal) + "</b><span>元</span></div>" +
+      '<div class="calculation-total"><small>' + totalLabel + "</small><b>" + money.format(c.joint ? c.fixedTotalWithJoint : c.fixedFractureTotal) + "</b><span>元</span></div>" +
       "</div><p>" + (tmrE === 0 ? "本方案未投保 TMR。"
         : '<strong class="tmr-highlight">另有 TMR 意外醫療實支實付最高 ' + tmrE + " 萬元</strong><span>，依實際費用及條款審核，不列入定額合計。</span>") +
       "</p></div>";
@@ -414,7 +418,7 @@
     var joint = currentJoint();
     var key = joint
       ? ["joint", joint.id, c.effectiveAdh].join("|")
-      : ["bone", c.bone.id, state.fractureType, c.effectiveAdh, c.adhFracture, state.jointId || ""].join("|");
+      : ["bone", c.bone ? c.bone.id : "", state.fractureType, c.effectiveAdh, c.adhFracture, state.jointId || ""].join("|");
     if (key === lastChartKey) return;
     lastChartKey = key;
 
@@ -423,7 +427,7 @@
       overlay = overlayHtml(R.JOINT_CHART[joint.id], joint.label, joint.pct + "%", "",
         c.effectiveAdh > 0 ? "理賠 " + money.format(dislocationBenefit(c, joint)) + " 元" : "未投保 ADH");
     } else {
-      var bone = c.bone, f = c.fracture.factor, pos = R.BONE_CHART[bone.id];
+      var bone = c.bone, f = c.fracture.factor, pos = bone && R.BONE_CHART[bone.id]; // 骨折「不選」→ 不顯示氣泡
       if (pos) {
         overlay = overlayHtml(pos, bone.label, bone.adh + "%",
           f !== 1 ? "<small>" + esc(c.fracture.label) + " " + pctText(bone.adh * f) + "</small>" : "",
@@ -435,7 +439,7 @@
     var pills = document.querySelectorAll(".chart-pill");
     for (var k = 0; k < pills.length; k++) {
       var kd = pills[k].getAttribute("data-kind"), pid = pills[k].getAttribute("data-id");
-      pills[k].classList.toggle("is-active", kd === "bone" ? pid === c.bone.id : pid === (state.jointId || ""));
+      pills[k].classList.toggle("is-active", kd === "bone" ? !!c.bone && pid === c.bone.id : pid === (state.jointId || ""));
       pills[k].classList.toggle("is-joint-mode", !!joint && kd === "joint");
     }
     var boxes = document.querySelectorAll(".chart-overlay");
@@ -477,6 +481,13 @@
       return;
     }
 
+    if (!c.bone) { // ---- 骨折、脫臼都「不選」（或骨折不選且停在骨折模式）----
+      callout.innerHTML = '<span class="callout-label">目前未選擇部位</span>' +
+        '<div class="callout-main callout-empty"><strong>點圖上部位或在左側選擇</strong></div>' +
+        "<em>點骨頭人左欄骨折、右欄脫臼部位，即可看理賠金額。</em>" +
+        (adm && c.admHospital ? '<dl class="callout-pay">' + row("ADM 住院 " + c.allowedHospitalDays + " 日", yuan(c.admHospital)) + row("定額給付合計", yuan(c.fixedTotalWithJoint), "is-total") + "</dl>" : "");
+      return;
+    }
     // ---- 骨折模式（與報價卡相同數字）----
     var bone = c.bone, f = c.fracture.factor, eff = bone.adh * f;
     var pay = "";
@@ -664,7 +675,7 @@
     fillOptions($("occupation"), [1, 2, 3, 4, 5, 6].map(function (n) { return [n, "第 " + n + " 類"]; }));
     fillOptions($("payMode"), Object.keys(R.PAY_MODES).map(function (k) { return [k, R.PAY_MODES[k].label]; }));
     fillOptions($("olaTerm"), RULES.ola6.terms.map(function (t) { return [t, t + " 年"]; }));
-    fillOptions($("boneId"), R.BONES.map(function (b) { return [b.id, b.label]; }));
+    fillOptions($("boneId"), [["", "不選"]].concat(R.BONES.map(function (b) { return [b.id, b.label]; })));
     fillOptions($("jointId"), [["", "不選"]].concat(R.JOINTS.map(function (j) { return [j.id, j.label + "（" + j.pct + "%）"]; })));
     fillOptions($("fractureType"), Object.keys(R.FRACTURE_TYPES).map(function (k) { return [k, R.FRACTURE_TYPES[k].label]; }));
     $("olaAmount").min = String(RULES.ola6.min); $("olaAmount").max = String(RULES.ola6.max);
@@ -688,7 +699,7 @@
     on("tmrAmount", "input", function (t) { state.tmrAmount = clampNum(t.value, 0, RULES.tmr.max); });
     on("admDaily", "input", function (t) { state.admDaily = clampNum(t.value, 0, RULES.adm.max); });
     on("adhAmount", "input", function (t) { state.adhAmount = clampNum(t.value, 0, compute(state).maxAdh); });
-    on("boneId", "change", function (t) { state.boneId = t.value; chartView.mode = "bone"; });
+    on("boneId", "change", function (t) { state.boneId = t.value; chartView.mode = !t.value && state.jointId ? "joint" : "bone"; });
     on("fractureType", "change", function (t) { state.fractureType = t.value; chartView.mode = "bone"; });
     on("jointId", "change", function (t) {
       state.jointId = t.value;
