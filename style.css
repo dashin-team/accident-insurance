@@ -946,6 +946,9 @@ select:focus {
   .workspace-grid {
     grid-template-columns: 1fr;
   }
+  .workspace-grid > * {
+    min-width: 0;
+  }
   .input-panel {
     max-height: none;
     position: static;
@@ -1027,6 +1030,7 @@ select:focus {
   .benefit-row > b {
     text-align: left;
     grid-column: 2;
+    white-space: normal;
   }
   .fracture-calculation {
     margin: 18px;
@@ -1819,3 +1823,233 @@ select:focus {
 }
 .scenario-box select:disabled { opacity: .45; cursor: not-allowed; }
 .callout-main.callout-empty strong { font-size: 20px; }
+
+/* =====================================================================
+ * 比較區：同一個骨折部位的 ADM 骨折未住院津貼 vs ADH 骨折險
+ * 放在報價卡「骨折可領多少」下方，配色沿用試算格與商品色（ADM 紫、ADH 紅）
+ * ===================================================================== */
+.benefit-compare {
+  background: #f7f4eb;
+  border: 1px solid #dfd2bb;
+  margin: 0 14px 7px;
+  padding: 8px 10px 10px;
+  break-inside: avoid;
+}
+.benefit-compare .fracture-title {
+  margin-bottom: 6px;
+}
+.benefit-compare .fracture-title h3 {
+  font-size: clamp(18px, 2vw, 22px);
+}
+.compare-shared {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  background: #1c3541;
+  color: #dce9e8;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.compare-shared strong {
+  color: #f4c658;
+  font-size: 16px;
+  font-weight: 900;
+}
+.compare-chip {
+  background: #ffffff1f;
+  padding: 1px 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.compare-pair,
+.compare-result {
+  border: 1px solid #d3c4aa;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.compare-col,
+.compare-result > div {
+  min-width: 0;
+  background: #fff;
+  padding: 8px 10px 10px;
+}
+.compare-col + .compare-col,
+.compare-result > div + div {
+  border-left: 1px solid #d3c4aa;
+}
+.compare-col.is-adm {
+  border-top: 3px solid #7451a2;
+}
+.compare-col.is-adh {
+  border-top: 3px solid var(--red);
+}
+.compare-col.is-empty {
+  background: #f4f6f5;
+}
+.compare-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.compare-code {
+  flex: none;
+  color: #fff;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.compare-col.is-adm .compare-code {
+  background: #7451a2;
+}
+.compare-col.is-adh .compare-code {
+  background: var(--red);
+}
+.compare-head strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.compare-cover,
+.compare-detail,
+.compare-prem,
+.compare-hint,
+.compare-rule {
+  margin: 0;
+}
+.compare-cover {
+  margin-top: 4px;
+  color: #5f5a53;
+  font-size: 13px;
+  font-weight: 800;
+}
+.compare-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-height: 42px;
+  margin-top: 2px;
+}
+.compare-figure b {
+  font-family: var(--display-number);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-size: clamp(28px, 2.4vw, 36px);
+  font-weight: 900;
+  line-height: 1;
+}
+.compare-col.is-adm .compare-figure b:not(.compare-status) {
+  color: #7451a2;
+}
+.compare-col.is-adh .compare-figure b:not(.compare-status) {
+  color: var(--red);
+}
+.compare-figure span,
+.compare-sum span {
+  font-size: 14px;
+  font-weight: 800;
+}
+.compare-figure .compare-status,
+.compare-result .compare-status {
+  font-family: inherit;
+  letter-spacing: 0;
+  color: var(--muted);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+.compare-detail {
+  margin-top: 4px;
+  color: #5f5a53;
+  min-height: 2.6em;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.compare-prem {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #d6ddd9;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+.compare-result {
+  margin-top: 8px;
+}
+.compare-result small {
+  display: block;
+  margin-bottom: 2px;
+  color: #5f5a53;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  font-weight: 800;
+}
+.compare-result b {
+  display: block;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.compare-result.is-ready .compare-sum {
+  color: #fff;
+  background: var(--red);
+}
+.compare-result.is-ready .compare-sum small {
+  color: #ffe7d5;
+}
+.compare-result.is-ready .compare-sum b {
+  font-family: var(--display-number);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-size: clamp(26px, 2.2vw, 34px);
+  line-height: 1;
+}
+.compare-result.is-ready .compare-sum b,
+.compare-result.is-ready .compare-sum span {
+  display: inline;
+}
+.compare-hint,
+.compare-rule {
+  color: #50656f;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.compare-hint {
+  margin-top: 6px;
+}
+.compare-rule {
+  margin-top: 2px;
+}
+@media (width<=720px) {
+  .benefit-compare {
+    margin: 0 18px 18px;
+    padding: 14px;
+  }
+  .compare-pair,
+  .compare-result {
+    grid-template-columns: 1fr;
+  }
+  .compare-col + .compare-col,
+  .compare-result > div + div {
+    border-left: 0;
+    border-top: 1px solid #d3c4aa;
+  }
+  .compare-detail {
+    min-height: 0;
+  }
+  .compare-shared strong {
+    font-size: 15px;
+  }
+  .compare-figure b {
+    font-size: 32px;
+  }
+  .compare-result.is-ready .compare-sum b {
+    font-size: 30px;
+  }
+}

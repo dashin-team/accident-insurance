@@ -199,6 +199,101 @@
       "<b>" + esc(amount) + "</b></div>";
   }
 
+  /* ---------------------------------------------------------------
+   * 比較區：同一個骨折部位（含程度、實際住院日數）下，
+   * ADM 骨折未住院津貼 vs ADH 骨折險。金額全部取自 compute() 已算好的結果，
+   * 與試算卡「ADM 未住院骨折給付」「ADH 骨折＋關懷金」同一組數字。
+   * --------------------------------------------------------------- */
+  function compareSection(c, s) {
+    var bone = c.bone;
+    var admOn = s.admDaily > 0;
+    var adhOn = c.effectiveAdh > 0;
+    var p = c.premiums;
+    var admReady = !!(admOn && bone);
+    var adhReady = !!(adhOn && bone);
+    var bothReady = admReady && adhReady;
+    var admAmt = c.admBoneSupport;
+    var adhAmt = c.adhFracture + c.adhCare;
+
+    function finite(n) { return typeof n === "number" && isFinite(n); }
+
+    function premText(covered, key) {
+      if (!covered) return "未計保費";
+      if (!p || !finite(p.periodic[key])) return "保費待確認";
+      return c.pay.suffix + "保費 $" + money.format(p.periodic[key]);
+    }
+
+    function figure(ready, status, value) {
+      if (!ready || !finite(value)) {
+        return '<div class="compare-figure" data-amount=""><b class="compare-status">' + esc(status) + "</b></div>";
+      }
+      return '<div class="compare-figure" data-amount="' + value + '"><b>' + esc(money.format(value)) + "</b><span>元</span></div>";
+    }
+
+    var admStatus = admOn ? "請選擇骨折部位" : "未投保";
+    var adhStatus = adhOn ? "請選擇骨折部位" : "未投保";
+    var pending = "";
+    if (!bothReady) {
+      if (!bone && (!admOn || !adhOn)) pending = "未投保／請選擇骨折部位";
+      else if (!bone) pending = "請選擇骨折部位";
+      else if (!admOn && !adhOn) pending = "兩項都未投保";
+      else pending = !admOn ? "ADM 未投保" : "ADH 未投保";
+    }
+
+    var shared = bone
+      ? '<div class="compare-shared"><span>同一個骨折部位</span><strong>' + esc(bone.label) + "</strong>" +
+        '<span class="compare-chip">' + esc(c.fracture.label) + "</span>" +
+        '<span class="compare-chip">實際住院 ' + c.hospitalDays + " 日</span></div>"
+      : '<div class="compare-shared is-empty"><span>同一個骨折部位</span><strong>請選擇骨折部位</strong>' +
+        '<span class="compare-chip">左側骨折情境，或點骨頭人圖上的部位</span></div>';
+
+    var usedDays = bone ? c.allowedHospitalDays + c.remainingBoneDays : 0;
+    var admDetail = admReady
+      ? "未住院 " + c.remainingBoneDays + " 日（" + (c.fracture.factor === 1 ? "骨折別 " : "依程度後日數 ") + usedDays + " 日，已住院 " + c.allowedHospitalDays + " 日）"
+      : (admOn ? "選定部位後，與此處的 ADH 用同一個部位試算" : "此方案未納入 ADM");
+    var adhDetail = adhReady
+      ? "骨折金 " + money.format(c.adhFracture) + "＋2% 關懷金 " + money.format(c.adhCare)
+      : (adhOn ? "選定部位後，與此處的 ADM 用同一個部位試算" : "此方案未納入 ADH");
+
+    var diffHtml, sumHtml;
+    if (bothReady && finite(admAmt) && finite(adhAmt)) {
+      var diff = adhAmt - admAmt;
+      var diffText = diff === 0 ? "兩項金額相同" : (diff > 0 ? "ADH 多 " : "ADM 多 ") + money.format(Math.abs(diff)) + " 元";
+      diffHtml = "<b>" + esc(diffText) + "</b>";
+      sumHtml = "<b>" + esc(money.format(admAmt + adhAmt)) + "</b><span>元</span>";
+    } else {
+      diffHtml = '<b class="compare-status">' + esc(pending) + "</b>";
+      sumHtml = '<b class="compare-status">' + esc(pending) + "</b>";
+    }
+
+    return '<section class="benefit-compare" id="benefitCompare" aria-label="ADM 與 ADH 骨折給付比較">' +
+      '<div class="fracture-title"><span>比較區</span><h3>同一個部位，兩種商品各賠多少</h3></div>' +
+      shared +
+      '<div class="compare-pair">' +
+        '<article class="compare-col is-adm' + (admReady ? "" : " is-empty") + '" data-compare="adm">' +
+          '<header class="compare-head"><span class="compare-code">ADM</span><strong>骨折未住院津貼</strong></header>' +
+          '<p class="compare-cover">' + (admOn ? "日額 " + money.format(s.admDaily) + " 元" : "未投保") + "</p>" +
+          figure(admReady, admStatus, admAmt) +
+          '<p class="compare-detail">' + esc(admDetail) + "</p>" +
+          '<p class="compare-prem">' + esc(premText(admOn, "adm")) + "</p>" +
+        "</article>" +
+        '<article class="compare-col is-adh' + (adhReady ? "" : " is-empty") + '" data-compare="adh">' +
+          '<header class="compare-head"><span class="compare-code">ADH</span><strong>骨折險</strong></header>' +
+          '<p class="compare-cover">' + (adhOn ? "保額 " + money.format(c.effectiveAdh) + " 萬" : "未投保") + "</p>" +
+          figure(adhReady, adhStatus, adhAmt) +
+          '<p class="compare-detail">' + esc(adhDetail) + "</p>" +
+          '<p class="compare-prem">' + esc(premText(adhOn, "adh")) + "</p>" +
+        "</article>" +
+      "</div>" +
+      '<div class="compare-result' + (bothReady ? " is-ready" : "") + '">' +
+        "<div><small>差額</small>" + diffHtml + "</div>" +
+        '<div class="compare-sum"><small>兩項給付合計</small>' + sumHtml + "</div>" +
+      "</div>" +
+      '<p class="compare-hint">兩項合計＝ADM 骨折未住院津貼＋ADH 骨折金與 2% 關懷金。上方定額給付合計另含 ADM 住院日額與脫臼。</p>' +
+      '<p class="compare-rule">骨折未住院津貼，按骨折別日數（已住院但未達該日數者，只給付未住院部分，合計日數以骨折別為上限）乘以傷害醫療保險金日額的二分之一；不完全骨折按完全骨折日數二分之一、骨骼龜裂按四分之一，同一事故同時多處骨折僅給付較高一項（依條款第八條）。</p>' +
+    "</section>";
+  }
+
   function render() {
     var s = state;
     var c = compute(s);
@@ -310,6 +405,8 @@
       "</div><p>" + (tmrE === 0 ? "本方案未投保 TMR。"
         : '<strong class="tmr-highlight">另有 TMR 意外醫療實支實付最高 ' + tmrE + " 萬元</strong><span>，依實際費用及條款審核，不列入定額合計。</span>") +
       "</p></div>";
+
+    html += compareSection(c, s);
 
     html += '<div class="quote-footnotes"><strong>試算依據與重要提醒</strong>' +
       "<p>附約須搭配有效主約；OLA6 最低 " + RULES.ola6.min + " 萬元。附約額度與搭配規定仍須覆核。</p>" +
