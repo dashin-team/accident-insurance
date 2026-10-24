@@ -946,6 +946,9 @@ select:focus {
   .workspace-grid {
     grid-template-columns: 1fr;
   }
+  .workspace-grid > * {
+    min-width: 0;
+  }
   .input-panel {
     max-height: none;
     position: static;
@@ -1027,6 +1030,7 @@ select:focus {
   .benefit-row > b {
     text-align: left;
     grid-column: 2;
+    white-space: normal;
   }
   .fracture-calculation {
     margin: 18px;
